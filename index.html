@@ -479,7 +479,7 @@ function doLogin() {
   if (pw === CONFIG.passwort || pw === CONFIG.adminPasswort) {
     document.getElementById('login-screen').style.display = 'none';
     zeigeMenu();
-    ladeNoten();
+    ladeMusikstuecke();
   } else {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('pw-input').value = '';
@@ -560,7 +560,7 @@ document.getElementById('admin-pw-input').addEventListener('keydown', e => { if(
 // ════════════════════════════════════════
 // DATEN LADEN
 // ════════════════════════════════════════
-async function ladeNoten() {
+async function ladeMusikstuecke() {
   const url = `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CONFIG.sheetName)}`;
   try {
     const res = await fetch(url);
