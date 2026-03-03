@@ -450,7 +450,7 @@ body { font-family:'Source Sans 3',sans-serif; background:var(--dark); color:var
 const CONFIG = {
   passwort: "meulenwald1955",
   adminPasswort: "admin2024",  // Vorläufig – bitte ändern!
-  sheetId: "1KPS3CKPmV3gOVOLfO6zzpaEHiLaLTsO5feielYOlpA8",
+  sheetId: "1262-ZheI3tH1O0GQY1E0fFAs5-cX1F_CEpEJFLOwJN0",
   sheetName: "Tabellenblatt1",
   sheetNameStuecke: "Musikstuecke",
 };
@@ -479,7 +479,7 @@ function doLogin() {
   if (pw === CONFIG.passwort || pw === CONFIG.adminPasswort) {
     document.getElementById('login-screen').style.display = 'none';
     zeigeMenu();
-    ladeMusikstuecke();
+    ladeNoten();
   } else {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('pw-input').value = '';
@@ -560,7 +560,7 @@ document.getElementById('admin-pw-input').addEventListener('keydown', e => { if(
 // ════════════════════════════════════════
 // DATEN LADEN
 // ════════════════════════════════════════
-async function ladeMusikstuecke() {
+async function ladeNoten() {
   const url = `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CONFIG.sheetName)}`;
   try {
     const res = await fetch(url);
