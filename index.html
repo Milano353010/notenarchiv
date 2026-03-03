@@ -625,7 +625,7 @@ async function ladeNoten() {
 let alleMusikStuecke = [];
 
 async function ladeMusikStuecke() {
-  const url = \`https://docs.google.com/spreadsheets/d/\${CONFIG.sheetId}/gviz/tq?tqx=out:json&sheet=\${encodeURIComponent(CONFIG.sheetNameStuecke)}\`;
+  const url = `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CONFIG.sheetNameStuecke)}`;
   try {
     const res = await fetch(url);
     const text = await res.text();
