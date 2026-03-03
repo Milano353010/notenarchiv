@@ -103,6 +103,13 @@ body { font-family:'Source Sans 3',sans-serif; background:var(--dark); color:var
 .empty-state { text-align:center; padding:3rem; color:var(--muted); font-size:0.9rem; }
 .empty-state .empty-icon { font-size:2.5rem; margin-bottom:0.75rem; display:block; }
 .loading { text-align:center; padding:3rem; color:var(--muted); }
+
+.sort-bar { display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap; }
+.sort-label { font-size:0.78rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
+.sort-btn { padding:0.45rem 1rem; background:none; border:1px solid rgba(0,0,0,0.15); border-radius:20px; color:var(--muted); font-family:'Source Sans 3',sans-serif; font-size:0.8rem; cursor:pointer; transition:all 0.2s; }
+.sort-btn:hover { border-color:rgba(0,0,0,0.4); color:var(--cream); }
+.sort-btn.active { background:var(--gold); color:#FFFFFF; border-color:var(--gold); }
+
 .loading-dots::after { content:'.'; animation:dots 1.5s infinite; }
 @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
 
@@ -252,7 +259,12 @@ body { font-family:'Source Sans 3',sans-serif; background:var(--dark); color:var
   </div>
   <!-- ARCHIV -->
   <div id="tab-archiv" class="tab-content active">
-    <div class="section-title">Notenarchiv</div>
+    <div class="section-title">Stücke suchen</div>
+    <div class="sort-bar no-print">
+      <span class="sort-label">Sortierung:</span>
+      <button class="sort-btn active" id="sort-alpha" onclick="setSortierung('alpha')">Az Alphabetisch</button>
+      <button class="sort-btn" id="sort-nummer" onclick="setSortierung('nummer')"># Nach Nummer</button>
+    </div>
     <div class="filter-bar no-print">
       <input class="filter-input" type="text" id="filter-suche" placeholder="🔍 Stück suchen..." oninput="renderArchiv()" />
       <select class="filter-select" id="filter-instrument" onchange="renderArchiv()">
@@ -586,6 +598,15 @@ async function ladeNoten() {
 // ════════════════════════════════════════
 // ARCHIV
 // ════════════════════════════════════════
+let aktSortierung = 'alpha';
+
+function setSortierung(art) {
+  aktSortierung = art;
+  document.getElementById('sort-alpha').classList.toggle('active', art === 'alpha');
+  document.getElementById('sort-nummer').classList.toggle('active', art === 'nummer');
+  renderArchiv();
+}
+
 function renderArchiv() {
   const suche = document.getElementById('filter-suche').value.toLowerCase();
   const instrument = document.getElementById('filter-instrument').value;
@@ -594,6 +615,13 @@ function renderArchiv() {
     const matchInst = !instrument || n.instrument === instrument;
     return matchSuche && matchInst;
   });
+  // Sortierung
+  if (aktSortierung === 'alpha') {
+    gefiltert.sort((a,b) => a.titel.localeCompare(b.titel, 'de'));
+  } else {
+    gefiltert.sort((a,b) => (parseInt(a.nummer)||0) - (parseInt(b.nummer)||0));
+  }
+
   const liste = document.getElementById('archiv-liste');
   if (!gefiltert.length) {
     liste.innerHTML = '<div class="empty-state"><span class="empty-icon">🔍</span>Keine Noten gefunden.</div>';
