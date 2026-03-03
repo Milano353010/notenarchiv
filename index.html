@@ -452,6 +452,7 @@ const CONFIG = {
   adminPasswort: "admin2024",  // Vorläufig – bitte ändern!
   sheetId: "1KPS3CKPmV3gOVOLfO6zzpaEHiLaLTsO5feielYOlpA8",
   sheetName: "Tabellenblatt1",
+  sheetNameStuecke: "Musikstücke",
 };
 
 // Instrumente nach Kategorie
@@ -604,9 +605,9 @@ async function ladeNoten() {
       sel.appendChild(opt);
     });
 
-    renderArchiv();
     renderMusikerview();
     renderAlleStuecke();
+    await ladeMusikStuecke();
 
   } catch(e) {
     document.getElementById('archiv-liste').innerHTML = `
@@ -615,6 +616,50 @@ async function ladeNoten() {
         <strong>Verbindung zur Tabelle fehlgeschlagen.</strong><br><br>
         Bitte stelle sicher dass die Google Tabelle öffentlich geteilt ist.
       </div>`;
+  }
+}
+
+// ════════════════════════════════════════
+// MUSIKSTÜCKE TABELLE
+// ════════════════════════════════════════
+let alleMusikStuecke = [];
+
+async function ladeMusikStuecke() {
+  const url = \`https://docs.google.com/spreadsheets/d/\${CONFIG.sheetId}/gviz/tq?tqx=out:json&sheet=\${encodeURIComponent(CONFIG.sheetNameStuecke)}\`;
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(47).slice(0,-2));
+    const rows = json.table.rows;
+    const cols = json.table.cols.map(c => c.label.toLowerCase().replace(/[_\s]/g,''));
+
+    const iNummer     = cols.findIndex(c => c.includes('nummeri') || c.includes('nummer'));
+    const iTitel      = cols.findIndex(c => c.includes('stück') || c.includes('stuck') || c.includes('titel'));
+    const iKomponist  = cols.findIndex(c => c.includes('komponist'));
+    const iArrangeur  = cols.findIndex(c => c.includes('arrangeur'));
+    const iSchw       = cols.findIndex(c => c.includes('schwier'));
+    const iVollst     = cols.findIndex(c => c.includes('vollst'));
+    const iOrchester  = cols.findIndex(c => c.includes('orchester'));
+    const iRegister   = cols.findIndex(c => c.includes('register'));
+
+    alleMusikStuecke = rows
+      .filter(r => r.c[iTitel] && r.c[iTitel].v)
+      .map(r => ({
+        nummer:        iNummer >= 0 && r.c[iNummer]   ? String(r.c[iNummer].v)   : '',
+        titel:         r.c[iTitel].v ? String(r.c[iTitel].v) : '',
+        komponist:     iKomponist >= 0 && r.c[iKomponist] ? String(r.c[iKomponist].v) : '',
+        arrangeur:     iArrangeur >= 0 && r.c[iArrangeur] ? String(r.c[iArrangeur].v) : '',
+        schwierigkeit: iSchw >= 0 && r.c[iSchw]       ? String(r.c[iSchw].v)       : '',
+        vollstaendig:  iVollst >= 0 && r.c[iVollst]   ? r.c[iVollst].v             : false,
+        orchester:     iOrchester >= 0 && r.c[iOrchester] ? String(r.c[iOrchester].v) : '',
+        registermappe: iRegister >= 0 && r.c[iRegister] ? r.c[iRegister].v          : false,
+      }));
+
+    renderArchiv();
+  } catch(e) {
+    console.error('Fehler beim Laden der Musikstücke:', e);
+    document.getElementById('archiv-liste').innerHTML =
+      '<div class="empty-state"><span class="empty-icon">⚠️</span><strong>Tabelle "Musikstücke" konnte nicht geladen werden.</strong><br><br>Bitte prüfe ob das Tabellenblatt öffentlich ist.</div>';
   }
 }
 
@@ -632,21 +677,7 @@ function setSortierung(art) {
 
 function renderArchiv() {
   const suche = document.getElementById('filter-suche').value.toLowerCase();
-
-  // Einzigartige Stücke gruppieren (nach NummerID)
-  const stueckeMap = {};
-  alleNoten.forEach(n => {
-    const key = n.nummer || n.titel;
-    if (!stueckeMap[key]) {
-      stueckeMap[key] = {
-        nummer: n.nummer, titel: n.titel, komponist: n.komponist,
-        arrangeur: n.arrangeur||'', schwierigkeit: n.schwierigkeit,
-        vollstaendig: n.vollstaendig, orchester: n.orchester||'',
-        registermappe: n.registermappe
-      };
-    }
-  });
-  let stuecke = Object.values(stueckeMap);
+  let stuecke = [...alleMusikStuecke];
 
   // Suche
   if (suche) {
