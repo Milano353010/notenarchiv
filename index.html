@@ -754,7 +754,7 @@ function renderArchiv() {
     return '<span class="td-schw schw-leer">'+s+'</span>';
   };
 
-  const bool2 = (v) => (v===true||v==='true'||v==='True')
+  const bool2 = (v) => (v===true||v==='true'||v==='True'||v==='TRUE'||v==='1')
     ? '<span class="td-bool-ja">✓</span>'
     : '<span class="td-bool-nein">–</span>';
 
@@ -1158,11 +1158,14 @@ function zeigeBericht(nummer, titel, komponist, schwierigkeit) {
     }
     body.innerHTML = bodyHtml || '<div class="empty-state">Keine Einträge vorhanden.</div>';
 
-    const vollst = (data['Vollständig']||'').toLowerCase();
-    const digit  = (data['digitalisiert']||'').toLowerCase();
+    const vollstRaw = data['Vollständig'];
+    const digitRaw  = data['digitalisiert'];
+    const istJa = (v) => v===true || String(v).toLowerCase()==='true' || String(v).toLowerCase()==='ja';
+    const vollst = istJa(vollstRaw);
+    const digit  = istJa(digitRaw);
     footer.innerHTML =
-      '<span class="bericht-status">Vollständig: <span class="' + (vollst==='ja'?'status-ja':'status-nein') + '">' + (vollst==='ja'?'✓ Ja':'✗ Nein') + '</span></span>' +
-      '<span class="bericht-status">Digitalisiert: <span class="' + (digit==='ja'?'status-ja':'status-nein') + '">' + (digit==='ja'?'✓ Ja':'✗ Nein') + '</span></span>';
+      '<span class="bericht-status">Vollständig: <span class="' + (vollst?'status-ja':'status-nein') + '">' + (vollst?'✓ Ja':'✗ Nein') + '</span></span>' +
+      '<span class="bericht-status">Digitalisiert: <span class="' + (digit?'status-ja':'status-nein') + '">' + (digit?'✓ Ja':'✗ Nein') + '</span></span>';
   }
 
   document.getElementById('bericht-modal').classList.add('open');
