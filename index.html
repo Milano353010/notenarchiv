@@ -128,6 +128,29 @@ body { font-family:'Source Sans 3',sans-serif; background:var(--dark); color:var
 .td-bool-ja { color:#2E7D32; font-weight:700; }
 .td-bool-nein { color:#CCCCCC; }
 
+
+/* ── BERICHT MODAL ── */
+#bericht-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; align-items:center; justify-content:center; padding:1rem; }
+#bericht-modal.open { display:flex; }
+.bericht-box { background:#FFFFFF; border:1px solid rgba(0,0,0,0.15); border-radius:4px; width:100%; max-width:650px; max-height:90vh; overflow-y:auto; box-shadow:0 8px 40px rgba(0,0,0,0.15); }
+.bericht-header { padding:1.25rem 1.5rem; border-bottom:1px solid rgba(0,0,0,0.1); display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; position:sticky; top:0; background:#FFFFFF; z-index:1; }
+.bericht-titel { font-family:'Playfair Display',serif; font-size:1.2rem; color:#111; }
+.bericht-meta { font-size:0.78rem; color:#666; margin-top:0.2rem; }
+.bericht-close { background:none; border:1px solid rgba(0,0,0,0.15); border-radius:2px; width:32px; height:32px; cursor:pointer; font-size:1rem; color:#666; flex-shrink:0; transition:all 0.2s; }
+.bericht-close:hover { border-color:#111; color:#111; }
+.bericht-body { padding:1.25rem 1.5rem; }
+.bericht-kategorie { margin-bottom:1.25rem; }
+.bericht-kat-titel { font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; color:#666; font-weight:600; margin-bottom:0.6rem; padding-bottom:0.4rem; border-bottom:1px solid rgba(0,0,0,0.08); }
+.bericht-stimmen { display:flex; flex-wrap:wrap; gap:0.4rem; }
+.stimme-badge { font-size:0.78rem; padding:0.25rem 0.6rem; border-radius:20px; border:1px solid; display:inline-flex; align-items:center; gap:0.3rem; }
+.stimme-ja { color:#2E7D32; border-color:#2E7D32; background:rgba(46,125,50,0.07); }
+.stimme-nein { color:#C62828; border-color:#C62828; background:rgba(198,40,40,0.07); }
+.bericht-footer { padding:1rem 1.5rem; border-top:1px solid rgba(0,0,0,0.08); display:flex; gap:1.5rem; }
+.bericht-status { font-size:0.82rem; display:flex; align-items:center; gap:0.4rem; }
+.status-ja { color:#2E7D32; font-weight:600; }
+.status-nein { color:#C62828; font-weight:600; }
+.noten-tabelle tr { cursor:pointer; }
+
 .loading-dots::after { content:'.'; animation:dots 1.5s infinite; }
 @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
 
@@ -441,6 +464,22 @@ body { font-family:'Source Sans 3',sans-serif; background:var(--dark); color:var
   </div>
 </div>
 
+
+<!-- BERICHT MODAL -->
+<div id="bericht-modal">
+  <div class="bericht-box">
+    <div class="bericht-header">
+      <div>
+        <div class="bericht-titel" id="bericht-titel">–</div>
+        <div class="bericht-meta" id="bericht-meta">–</div>
+      </div>
+      <button class="bericht-close" onclick="schliesseBericht()">✕</button>
+    </div>
+    <div class="bericht-body" id="bericht-body"></div>
+    <div class="bericht-footer" id="bericht-footer"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -726,7 +765,7 @@ function renderArchiv() {
     '<th>Orchester</th><th style="text-align:center">Registermappe</th>' +
     '</tr></thead><tbody>' +
     stuecke.map(s =>
-      '<tr>' +
+      `<tr onclick="zeigeBericht('${s.nummer}','${s.titel.replace(/'/g,"\\'")}','${(s.komponist||'').replace(/'/g,"\\'")}','${(s.schwierigkeit||'').replace(/'/g,"\\'")}')" title="Klicken für Details">` +
       '<td class="td-num">'+(s.nummer||'')+'</td>' +
       '<td style="font-weight:600">'+s.titel+'</td>' +
       '<td>'+(s.komponist||'–')+'</td>' +
@@ -1031,6 +1070,108 @@ function erfasseNotenStueck() {
     zeigToast('📋 Daten in Zwischenablage kopiert – in Tabelle einfügen mit Strg+V');
   }).catch(() => {});
 }
+
+
+// ════════════════════════════════════════
+// VORHANDENE STIMMEN
+// ════════════════════════════════════════
+const STIMMEN_SHEET_ID = '1bA_yp6aqEl5suoObCPKj0CvW6V03HwW-3o4PFCqaewA';
+const STIMMEN_SHEET_NAME = 'vorhandene_Stimmen';
+
+const STIMMEN_KATEGORIEN = {
+  'Holzbläser': ['Piccolo','Flöte 1','Flöte 2','Oboe 1','Oboe 2','Fagott 1','Fagott 2',
+    'Klarinette 1','Klarinette 2','Klarinette 3','Es Klarinette','Es Alto Klarinette','Bassklarinette',
+    'Sopran Saxophon','Alsaxophon 1','Altsaxophon 2','Tenorsaxophon 1','Tenorsaxophon 2','Baritonsaxophon'],
+  'Trompete / Flügelhorn': ['Trompete 1','Trompete 2','Trompete 3','Trompete 4','Es Sopran Cornett',
+    'Flügelhorn 1','Flügelhorn 2','Flügelhorn 3'],
+  'Horn / Posaune / Tenorhorn': ['F Horn 1','F Horn 2','F Horn 3','F Horn 4',
+    'Es Horn 1','Es Horn 2','Es Horn 3','ES Horn 4',
+    'Posaune 1 in C','Posaune 2 in C','Posaune 3 in C','Posaune 4 in C',
+    'Posaune 1 in B','Posaune 2 in B','Posaune 3 in B','Posaune 4 in B',
+    'Tenorhorn 1','Tenorhorn 2'],
+  'Euphonium / Tuba / Bass': ['Euphonium 1/Bariton 1 in B','Euphonium 2/Bariton 2 in B',
+    'Euphonium 1 in C','Euphonium 2 in C','Violin Cello','C Tuba','Bouble Bass','B Tuba','Es Tuba','E Bass'],
+  'Schlagwerk / Sonstige': ['Keyboard/Piano','Schlagwerk gesamt'],
+};
+
+let alleStimmen = {};  // key: NummerID -> row data
+
+async function ladeVorhandeneStimmen() {
+  const url = `https://docs.google.com/spreadsheets/d/${STIMMEN_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(STIMMEN_SHEET_NAME)}`;
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(47).slice(0,-2));
+    const rows = json.table.rows;
+    const cols = json.table.cols.map(c => c.label);
+
+    alleStimmen = {};
+    rows.forEach(r => {
+      const rowData = {};
+      cols.forEach((col, i) => {
+        rowData[col] = r.c[i] ? (r.c[i].v !== null ? String(r.c[i].v) : '') : '';
+      });
+      const numId = rowData['NummerID'] ? String(Math.round(parseFloat(rowData['NummerID']))) : '';
+      if (numId) alleStimmen[numId] = rowData;
+    });
+    console.log('Stimmen geladen:', Object.keys(alleStimmen).length, 'Stücke');
+  } catch(e) {
+    console.error('Fehler beim Laden der Stimmen:', e);
+  }
+}
+
+function zeigeBericht(nummer, titel, komponist, schwierigkeit) {
+  const data = alleStimmen[String(nummer)];
+  document.getElementById('bericht-titel').textContent = (nummer ? nummer + ' – ' : '') + titel;
+  document.getElementById('bericht-meta').textContent =
+    (komponist ? 'Komponist: ' + komponist : '') +
+    (schwierigkeit ? ' | Schwierigkeitsgrad: ' + schwierigkeit : '');
+
+  const body = document.getElementById('bericht-body');
+  const footer = document.getElementById('bericht-footer');
+
+  if (!data) {
+    body.innerHTML = '<div class="empty-state"><span class="empty-icon">📋</span>Keine Stimmen-Daten vorhanden.</div>';
+    footer.innerHTML = '';
+  } else {
+    let bodyHtml = '';
+    for (const [kat, stimmen] of Object.entries(STIMMEN_KATEGORIEN)) {
+      const relevant = stimmen.filter(s => {
+        const v = (data[s]||'').toLowerCase().trim();
+        return v === 'ja' || v === 'nein';
+      });
+      if (!relevant.length) continue;
+      bodyHtml += '<div class="bericht-kategorie">';
+      bodyHtml += '<div class="bericht-kat-titel">' + kat + '</div>';
+      bodyHtml += '<div class="bericht-stimmen">';
+      relevant.forEach(s => {
+        const v = (data[s]||'').toLowerCase().trim();
+        const cls = v === 'ja' ? 'stimme-ja' : 'stimme-nein';
+        const icon = v === 'ja' ? '✓' : '✗';
+        bodyHtml += `<span class="stimme-badge ${cls}">${icon} ${s}</span>`;
+      });
+      bodyHtml += '</div></div>';
+    }
+    body.innerHTML = bodyHtml || '<div class="empty-state">Keine Einträge vorhanden.</div>';
+
+    const vollst = (data['Vollständig']||'').toLowerCase();
+    const digit  = (data['digitalisiert']||'').toLowerCase();
+    footer.innerHTML =
+      '<span class="bericht-status">Vollständig: <span class="' + (vollst==='ja'?'status-ja':'status-nein') + '">' + (vollst==='ja'?'✓ Ja':'✗ Nein') + '</span></span>' +
+      '<span class="bericht-status">Digitalisiert: <span class="' + (digit==='ja'?'status-ja':'status-nein') + '">' + (digit==='ja'?'✓ Ja':'✗ Nein') + '</span></span>';
+  }
+
+  document.getElementById('bericht-modal').classList.add('open');
+}
+
+function schliesseBericht() {
+  document.getElementById('bericht-modal').classList.remove('open');
+}
+
+// Close on backdrop click
+document.getElementById('bericht-modal').addEventListener('click', function(e) {
+  if (e.target === this) schliesseBericht();
+});
 
 // ════════════════════════════════════════
 // TOAST
