@@ -519,6 +519,7 @@ function doLogin() {
     document.getElementById('login-screen').style.display = 'none';
     zeigeMenu();
     ladeNoten();
+    ladeVorhandeneStimmen();
   } else {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('pw-input').value = '';
@@ -1112,6 +1113,8 @@ async function ladeVorhandeneStimmen() {
         rowData[col] = r.c[i] ? (r.c[i].v !== null ? String(r.c[i].v) : '') : '';
       });
       const numId = rowData['NummerID'] ? String(Math.round(parseFloat(rowData['NummerID']))) : '';
+      // also store with decimal for safety
+      if (numId) alleStimmen[numId + '.0'] = rowData;
       if (numId) alleStimmen[numId] = rowData;
     });
     console.log('Stimmen geladen:', Object.keys(alleStimmen).length, 'Stücke');
@@ -1121,7 +1124,8 @@ async function ladeVorhandeneStimmen() {
 }
 
 function zeigeBericht(nummer, titel, komponist, schwierigkeit) {
-  const data = alleStimmen[String(nummer)];
+  const numStr = String(nummer).replace('.0','');
+  const data = alleStimmen[numStr] || alleStimmen[numStr + '.0'] || alleStimmen[String(parseFloat(nummer))];
   document.getElementById('bericht-titel').textContent = (nummer ? nummer + ' – ' : '') + titel;
   document.getElementById('bericht-meta').textContent =
     (komponist ? 'Komponist: ' + komponist : '') +
