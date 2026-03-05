@@ -1110,7 +1110,7 @@ async function ladeVorhandeneStimmen() {
     rows.forEach(r => {
       const rowData = {};
       cols.forEach((col, i) => {
-        rowData[col] = r.c[i] ? (r.c[i].v !== null ? String(r.c[i].v) : '') : '';
+        rowData[col] = r.c[i] ? (r.c[i].v !== null ? r.c[i].v : '') : '';
       });
       const numId = rowData['NummerID'] ? String(Math.round(parseFloat(rowData['NummerID']))) : '';
       // also store with decimal for safety
